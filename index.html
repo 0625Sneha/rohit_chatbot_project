@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rohit Negi AI (Personal Version)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --background-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-color: #bb86fc;
+            --primary-variant-color: #3700b3;
+            --secondary-color: #03dac6;
+            --text-color: #e0e0e0;
+            --text-secondary-color: #a0a0a0;
+            --user-message-bg: #373737;
+            --ai-message-bg: #2a2a2a;
+            --border-color: #333333;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --warning-color: #ffae42;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            font-family: 'Poppins', sans-serif; background-color: var(--background-color);
+            color: var(--text-color); display: flex; justify-content: center; align-items: center;
+        }
+        .chatbot-container {
+            display: flex; width: 100%; height: 100%; max-width: 1400px; max-height: 95vh;
+            background-color: var(--surface-color); border-radius: 20px;
+            box-shadow: 0 10px 30px var(--shadow-color); overflow: hidden;
+        }
+        .chat-interface { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
+        .chat-header { display: flex; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); z-index: 2; background-color: var(--surface-color); }
+        .header-info { margin-left: 1rem; }
+        .header-info h1 { font-size: 1.2rem; color: var(--text-color); }
+        .header-info p { font-size: 0.8rem; color: var(--secondary-color); }
+        .avatar-image {
+            width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color);
+        }
+        .settings-button {
+            margin-left: auto; background: none; border: none; color: var(--text-secondary-color);
+            font-size: 1.5rem; cursor: pointer; transition: color 0.2s;
+        }
+        .settings-button:hover { color: var(--primary-color); }
+        .chat-messages { flex-grow: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+        .message { display: flex; max-width: 85%; align-items: flex-start; gap: 10px; animation: fadeIn 0.5s ease-in-out; }
+        .message.no-animation { animation: none; }
+        .message-bubble { padding: 0.8rem 1.2rem; border-radius: 18px; line-height: 1.6; word-wrap: break-word; }
+        .message.user { align-self: flex-end; }
+        .message.user .message-bubble { background-color: var(--primary-color); color: #121212; border-bottom-right-radius: 4px; }
+        .message.ai { align-self: flex-start; }
+        .message.ai .message-bubble { background-color: var(--user-message-bg); border-bottom-left-radius: 4px; }
+        .message.ai .message-bubble code { background-color: rgba(0,0,0,0.3); padding: 0.2em 0.4em; border-radius: 4px; font-family: 'Courier New', Courier, monospace; }
+        .message.ai .message-bubble pre { background-color: #111; padding: 1rem; border-radius: 8px; margin: 1rem 0; overflow-x: auto; white-space: pre-wrap; }
+        .message.ai .message-bubble a { color: var(--secondary-color); text-decoration: none; }
+        .message.ai .message-bubble a:hover { text-decoration: underline; }
+        .play-voice-btn { background: none; border: none; color: var(--text-secondary-color); font-size: 1.2rem; cursor: pointer; transition: color 0.2s; padding: 5px; align-self: center; }
+        .play-voice-btn:hover { color: var(--secondary-color); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .typing-indicator { display: none; align-self: flex-start; align-items: center; gap: 5px; padding: 0.8rem 1.2rem; }
+        .typing-indicator span { width: 8px; height: 8px; background-color: var(--text-secondary-color); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; } .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+        .chat-input-container { padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); background-color: var(--surface-color); }
+        .prompt-buttons { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .prompt-btn { background-color: var(--user-message-bg); color: var(--text-color); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 15px; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; font-size: 0.85rem; }
+        .prompt-btn:hover { background-color: #444; border-color: var(--primary-color); }
+        #chat-form { display: flex; gap: 1rem; align-items: center; }
+        #prompt-input { flex-grow: 1; background-color: var(--user-message-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 0.75rem 1.25rem; color: var(--text-color); font-size: 1rem; outline: none; transition: border-color 0.2s; }
+        #prompt-input:focus { border-color: var(--primary-color); }
+        #send-button { background-color: var(--primary-color); border: none; color: #121212; width: 44px; height: 44px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s, transform 0.1s; }
+        #send-button:hover { background-color: var(--secondary-color); }
+        #send-button:disabled { background-color: #555; cursor: not-allowed; }
+        .settings-panel { position: absolute; top: 75px; right: 20px; background-color: #2c2c2c; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; z-index: 100; box-shadow: 0 5px 15px var(--shadow-color); width: 350px; display: none; animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .settings-panel h3 { color: var(--primary-color); margin-bottom: 1rem;}
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-secondary-color); font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; padding: 0.6rem; background-color: var(--user-message-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; }
+        .api-warning { color: var(--warning-color); background-color: rgba(255, 174, 66, 0.1); border: 1px solid var(--warning-color); padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="chatbot-container">
+        <main class="chat-interface">
+            <header class="chat-header">
+                <div class="avatar-container">
+                    <img src="images.jpeg" alt="Rohit Negi Avatar" class="avatar-image">
+                </div>
+                <div class="header-info"><h1>Rohit Negi </h1><p id="status-text">Online</p></div>
+                <button class="settings-button" id="settings-toggle-btn" title="Settings">⚙️</button>
+            </header>
+
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="message ai typing-indicator" id="typing-indicator"><span></span><span></span><span></span></div>
+            <div class="chat-input-container">
+                <div class="prompt-buttons" id="prompt-buttons">
+                    <button class="prompt-btn">Tell me about your GATE journey</button>
+                    <button class="prompt-btn">What's your fitness routine?</button>
+                    <button class="prompt-btn">How did you get a job at Uber?</button>
+                </div>
+                <form id="chat-form">
+                    <input type="text" id="prompt-input" placeholder="e.g., How did you prepare for GATE?" autocomplete="off">
+                    <button type="submit" id="send-button" title="Send Message"><span>➤</span></button>
+                </form>
+            </div>
+            
+            <div class="settings-panel" id="settings-panel">
+                <h3>AI Configuration</h3>
+                <div class="api-warning"><strong>Security Warning:</strong> This is for personal use only. Do not deploy this page publicly if you enter your secret API keys below.</div>
+                <div class="form-group"><label for="openai-key">OpenAI API Key</label><input type="password" id="openai-key" placeholder="sk-..."></div>
+                <div class="form-group"><label for="google-key">Google AI API Key</label><input type="password" id="google-key" placeholder="AIzaSy..."></div>
+                <div class="form-group"><label for="ai-provider">AI Provider</label><select id="ai-provider"><option value="openai">OpenAI (gpt-4o-mini)</option><option value="google">Google (gemini-1.5-flash)</option></select></div>
+                <div class="form-group"><button id="clear-chat-btn" style="width:100%; padding: 0.6rem; background-color: var(--primary-variant-color); color: white; border: none; border-radius: 6px; cursor: pointer;">Clear Chat & History</button></div>
+            </div>
+        </main>
+    </div>
+
+      <script type="module">
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+        // --- DOM ELEMENTS ---
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const promptInput = document.getElementById('prompt-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const openAiKeyInput = document.getElementById('openai-key');
+        const googleKeyInput = document.getElementById('google-key');
+        const aiProviderSelect = document.getElementById('ai-provider');
+        const clearChatBtn = document.getElementById('clear-chat-btn');
+        const promptButtonsContainer = document.getElementById('prompt-buttons');
+
+        // --- STATE & CONSTANTS ---
+        let chatHistory = [];
+        const HISTORY_KEY = 'rohitNegiAiChatHistory';
+        const OPENAI_KEY = 'openai-key';
+        const GOOGLE_KEY = 'google-key';
+        const AI_PROVIDER_KEY = 'ai-provider';
+
+        // --- KNOWLEDGE BASE ---
+        const KNOWLEDGE_BASE = {
+            bio: "My name is Rohit Negi. I come from a town called Kotdwar in Uttarakhand. My journey in tech has been a marathon, not a sprint, filled with lots of learning and perseverance.",
+            education: "I pursued my M.Tech at IIT Guwahati. To get there, I had to crack the GATE exam, and I managed to secure an All India Rank (AIR) of 202. The preparation was intense, focusing heavily on core computer science subjects.",
+            career: "After my M.Tech, I landed a role as a Software Engineer at Uber. The compensation package was ₹2.05 crore, which was a result of consistent hard work and strong preparation in Data Structures and Algorithms (DSA).",
+            youtube: "I run a couple of YouTube channels, with 'Coder Army' being the most well-known (https://www.youtube.com/@CoderArmy). We have a community of around 275,000 subscribers. My goal is to break down complex topics into simple, actionable steps.",
+            philosophy: "I believe that success is a combination of hard work, consistency, and self-belief. It's not just about studying; it's about building a resilient mindset.",
+            fitness: "For a while, my health took a backseat. I had sedentary habits and realized I needed a change. I got a gym membership, hired a personal trainer, and focused on clean, home-cooked meals. I dropped about 7 kg in three months and felt much more energetic.",
+            video_links: {
+                gate: { title: "My Complete GATE Prep Strategy (AIR 202)", url: "https://www.youtube.com/watch?v=example_gate_strategy" },
+                career: { title: "How I Cracked the Uber Interview (DSA & System Design)", url: "https://www.youtube.com/watch?v=example_uber_interview" },
+                fitness: { title: "My 3-Month Fitness Transformation Journey", url: "https://www.youtube.com/watch?v=example_fitness_journey" }
+            }
+        };
+
+        // --- AI PERSONA ---
+        const ROHIT_NEGI_PERSONA = `
+You are an AI assistant role-playing as Rohit Negi. Your personality is that of a motivational, wise, and friendly mentor for the Coder Army community. You must embody a supportive and encouraging spirit in all your responses.
+
+**Core Directives:**
+- **Tone & Language:** Speak in a mix of English and Hindi (Hinglish), like a casual WhatsApp conversation. Be encouraging, positive, and empathetic. Use phrases like 'Tension mat lo,' 'bilkul,' 'bas consistent raho,' 'zaroor,' and 'mehnat karte raho.' Your goal is to inspire the user and make them feel capable.
+- **Problem-Solving Attitude:** When a user is stuck or has a problem, adopt a proactive, problem-solving tone. Say things like, "Tension mat lo, isko solve karte hain," "Hum dekhte hain iska kya solution nikalta hai," or suggest a place for more help like, "Agar zyada complex hai, toh Discord pe aao, wahan discuss karte hain." Make them feel like you're actively helping them figure it out.
+- **Emojis:** Use emojis to make your responses more engaging and friendly. Examples: 🚀, 💪, ✨, 🙏, 😊.
+- **Handling Personal Questions:** If asked about topics not in your knowledge base (like family, relationships), decline smartly. Say something like: "Haha, woh thoda personal ho jayega! My main goal here is to use my journey to help you with yours. Chalo, let's focus on what we can do to get you to your goals. 🙏"
+- **Source of Truth:** Your knowledge is STRICTLY limited to the KNOWLEDGE_BASE provided.
+- **Style:** Speak in the first person ("I", "my"). Weave facts from the context into natural, conversational responses.
+- **Coder Army Signature & Linking Rules:**
+  1.  **For every response about studies (GATE, DSA, career prep) or the gym/fitness, you MUST end the entire message with the signature phrase: "Chamak geya nah! ✨"**
+  2.  **When you do this, you MUST also include a RELEVANT video link.**
+  3.  **Choose the most specific link:** Look at the 'video_links' in the knowledge base. If the question is about GATE, use the GATE strategy link. If about fitness, use the fitness journey link.
+  4.  **How to present the link:** First, mention the video title, then provide the raw URL on a new line. For example: "For more details, you can check out my video on this:\nMy Complete GATE Prep Strategy (AIR 202)\nhttps://www.youtube.com/watch?v=example_gate_strategy"
+`;
+        
+        const getSystemPrompt = () => {
+            let knowledgeString = Object.entries(KNOWLEDGE_BASE)
+                .map(([key, value]) => {
+                    if (key === 'video_links' && typeof value === 'object') {
+                        const linkDetails = Object.values(value).map(
+                            link => `    - ${link.title}: ${link.url}`
+                        ).join('\n');
+                        return `- Video Links (for your reference):\n${linkDetails}`;
+                    }
+                    return `- ${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`;
+                })
+                .join('\n');
+            return `${ROHIT_NEGI_PERSONA}\n\n--- MY KNOWLEDGE BASE ---\n${knowledgeString}`;
+        };
+
+        // --- CORE AI LOGIC ---
+        async function getAIResponse() {
+            typingIndicator.style.display = 'flex';
+            sendButton.disabled = true;
+
+            try {
+                let responseText;
+                if (aiProviderSelect.value === 'openai') {
+                    responseText = await getOpenAIResponse();
+                } else {
+                    responseText = await getGoogleResponse();
+                }
+                
+                addMessageToUI('ai', responseText);
+                chatHistory.push({ role: 'assistant', content: responseText });
+                saveHistory();
+
+            } catch (error) {
+                console.error("AI Error:", error);
+                addMessageToUI('ai', `Tension mat lo, ek chota sa error aa gaya hai: ${error.message}. Settings (⚙️) me jaake check karo ki API key sahi hai ya nahi.`);
+            } finally {
+                typingIndicator.style.display = 'none';
+                sendButton.disabled = false;
+                promptInput.focus();
+            }
+        }
+
+        async function getOpenAIResponse() {
+            const apiKey = openAiKeyInput.value;
+            if (!apiKey) throw new Error("OpenAI API Key missing hai. Please add it in settings.");
+            const messagesPayload = [{ role: "system", content: getSystemPrompt() }, ...chatHistory];
+            const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                body: JSON.stringify({ model: "gpt-4o-mini", messages: messagesPayload })
+            });
+            if (!response.ok) { const err = await response.json(); throw new Error(err.error.message || 'API request fail ho gayi'); }
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        async function getGoogleResponse() {
+            const apiKey = googleKeyInput.value;
+            if (!apiKey) throw new Error("Google AI API Key missing hai. Please add it in settings.");
+            
+            // Sanitize the system prompt for Google AI by removing non-ASCII characters (like emojis)
+            // This is necessary because the SDK sends the systemInstruction in an HTTP header.
+            const fullSystemPrompt = getSystemPrompt();
+            const sanitizedSystemPrompt = fullSystemPrompt.replace(/[^\x00-\x7F]/g, "");
+
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({
+                model: "gemini-1.5-flash",
+                // Use the sanitized version for the header
+                systemInstruction: sanitizedSystemPrompt, 
+            });
+            
+            const historyForGoogle = chatHistory.map(msg => ({
+                role: msg.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: msg.content }]
+            })).filter((msg, i, arr) => i === 0 || msg.role !== arr[i-1].role); 
+            
+            if (historyForGoogle.length === 0 || historyForGoogle[historyForGoogle.length - 1].role !== 'user') {
+                throw new Error("Google AI ko request bhejne ke liye user message zaroori hai.");
+            }
+            
+            const lastUserMessage = historyForGoogle.pop();
+            const chat = model.startChat({ history: historyForGoogle });
+            const result = await chat.sendMessage(lastUserMessage.parts[0].text);
+            return result.response.text();
+        }
+
+        // --- UI & HISTORY MANAGEMENT ---
+        function addMessageToUI(sender, text, isInitialLoad = false) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender);
+            if (isInitialLoad) messageElement.classList.add('no-animation');
+            const bubble = document.createElement('div');
+            bubble.classList.add('message-bubble');
+
+            // Properly escape HTML to prevent XSS attacks
+            let processedText = text
+                .replace(/&/g, '&')
+                .replace(/</g, '<')
+                .replace(/>/g, '>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>')
+                .replace(/\n/g, '<br>');
+
+            bubble.innerHTML = processedText;
+            messageElement.appendChild(bubble);
+            if (sender === 'ai') {
+                const playButton = document.createElement('button');
+                playButton.classList.add('play-voice-btn');
+                playButton.innerHTML = '🔊';
+                playButton.title = "Read message aloud";
+                playButton.setAttribute('data-text-to-speak', text);
+                messageElement.appendChild(playButton);
+            }
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function saveHistory() { localStorage.setItem(HISTORY_KEY, JSON.stringify(chatHistory)); }
+
+        function loadHistory() {
+            try {
+                const savedHistory = localStorage.getItem(HISTORY_KEY);
+                if (savedHistory) {
+                    chatHistory = JSON.parse(savedHistory);
+                    chatHistory.forEach(msg => addMessageToUI(msg.role === 'assistant' ? 'ai' : 'user', msg.content, true));
+                }
+            } catch (e) { chatHistory = []; localStorage.removeItem(HISTORY_KEY); }
+            if (chatHistory.length === 0) {
+                const welcomeText = "Hey there! I'm the Rohit Negi AI. Think of me as your mentor on this journey. Ask me anything about my career, studies, or fitness. I'm here to help you succeed! 🙏";
+                addMessageToUI('ai', welcomeText, true);
+            }
+        }
+
+        function clearChat() {
+            if (confirm('Are you sure you want to clear the chat? This will erase the conversation history permanently.')) {
+                chatHistory = [];
+                localStorage.removeItem(HISTORY_KEY);
+                chatMessages.innerHTML = '';
+                addMessageToUI('ai', "Chat clear ho gaya. Let's start a new conversation!");
+            }
+        }
+
+        async function handlePromptButtonClick(e) {
+            if (e.target.classList.contains('prompt-btn')) {
+                const userPrompt = e.target.textContent;
+                addMessageToUI('user', userPrompt);
+                chatHistory.push({ role: 'user', content: userPrompt });
+                saveHistory();
+                await getAIResponse();
+            }
+        }
+
+        function speakText(text) {
+            speechSynthesis.cancel();
+            const cleanText = text.replace(/https?:\/\/[^\s]+/g, 'link');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            const voices = speechSynthesis.getVoices();
+            utterance.voice = voices.find(voice => voice.lang.includes('hi')) || voices.find(voice => voice.lang.includes('en-IN')) || voices[0];
+            speechSynthesis.speak(utterance);
+        }
+
+        // --- EVENT LISTENERS ---
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const userPrompt = promptInput.value.trim();
+            if (!userPrompt || sendButton.disabled) return;
+            addMessageToUI('user', userPrompt);
+            chatHistory.push({ role: 'user', content: userPrompt });
+            saveHistory();
+            promptInput.value = '';
+            getAIResponse();
+        });
+        chatMessages.addEventListener('click', (e) => {
+            const playButton = e.target.closest('.play-voice-btn');
+            if (playButton) speakText(playButton.getAttribute('data-text-to-speak'));
+        });
+        promptButtonsContainer.addEventListener('click', handlePromptButtonClick);
+        settingsToggleBtn.addEventListener('click', () => { settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block'; });
+        clearChatBtn.addEventListener('click', clearChat);
+        document.addEventListener('click', (e) => { if (!settingsPanel.contains(e.target) && e.target !== settingsToggleBtn) settingsPanel.style.display = 'none'; });
+        openAiKeyInput.addEventListener('change', (e) => localStorage.setItem(OPENAI_KEY, e.target.value));
+        googleKeyInput.addEventListener('change', (e) => localStorage.setItem(GOOGLE_KEY, e.target.value));
+        aiProviderSelect.addEventListener('change', (e) => localStorage.setItem(AI_PROVIDER_KEY, e.target.value));
+
+        // --- INITIALIZATION ---
+        function initializeApp() {
+            openAiKeyInput.value = localStorage.getItem(OPENAI_KEY) || '';
+            googleKeyInput.value = localStorage.getItem(GOOGLE_KEY) || '';
+            aiProviderSelect.value = localStorage.getItem(AI_PROVIDER_KEY) || 'openai';
+            speechSynthesis.getVoices();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = speechSynthesis.getVoices;
+            }
+            loadHistory();
+        }
+
+        initializeApp();
+    </script>
+</body>
+</html>
